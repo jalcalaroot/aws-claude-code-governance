@@ -1,0 +1,59 @@
+flowchart TB
+  subgraph users["End users - two local containers, no AWS credentials"]
+    subgraph ua["finanzas-user - group finanzas-builders"]
+      CCA["Claude Code<br/>Haiku 4.5 only, 1 USD per day"]:::svc
+      TOKA["JWT token<br/>ANTHROPIC_AUTH_TOKEN"]:::sec
+      TOKA -->|env var| CCA
+    end
+    subgraph ub["platform-user - group platform-engineers"]
+      CCB["Claude Code<br/>Sonnet 4.6 only, 2 USD per day"]:::svc
+      TOKB["JWT token<br/>ANTHROPIC_AUTH_TOKEN"]:::sec
+      TOKB -->|env var| CCB
+    end
+    MS["managed-settings.json<br/>planned, phase 4"]:::def
+    MS -.->|policy| CCA
+    MS -.->|policy| CCB
+  end
+  COG["Amazon Cognito<br/>user pool and groups"]:::ext
+  COG -->|sign-in, PKCE| TOKA
+  COG -->|sign-in, PKCE| TOKB
+  subgraph gw["Amazon Bedrock AgentCore Gateway - AWS-managed"]
+    WAF["AWS WAF web ACL<br/>managed rules, IP reputation, rate limit"]:::sec
+    AUTH["JWT authorizer<br/>CUSTOM_JWT, Cognito OIDC"]:::sec
+    subgraph req["REQUEST interceptor - Lambda, one per gateway"]
+      C1["1 Model allowlist per group<br/>403, 503 if misconfigured"]:::sec
+      C2["2 Budget<br/>daily and monthly, 403"]:::sec
+      C3["3 Guardrail on the prompt<br/>403, 503 if unavailable"]:::sec
+      C4["4 Request clean-up<br/>drops metadata.user_id"]:::svc
+      C1 --> C2 --> C3 --> C4
+    end
+    TGT["Inference targets<br/>bedrock-runtime and bedrock-mantle<br/>gateway IAM role"]:::svc
+    RESP["RESPONSE interceptor - Lambda<br/>cost = tokens x price"]:::ok
+    WAF -->|allowed| AUTH
+    AUTH -->|claims and body| C1
+    C4 -->|allowed| TGT
+    TGT -->|response| RESP
+  end
+  CCA -->|HTTPS and JWT| WAF
+  CCB -->|HTTPS and JWT| WAF
+  BR["Amazon Bedrock<br/>runtime: Haiku 4.5, Sonnet 4.6<br/>Mantle: Sonnet 5, Opus 5.5 (quotas pending)"]:::ext
+  TGT <-->|SigV4| BR
+  DDB[("DynamoDB<br/>spend ledger")]:::ok
+  GR["Bedrock Guardrails<br/>PROMPT_ATTACK, PII"]:::sec
+  CW["CloudWatch<br/>per-user metrics, no prompts"]:::ok
+  C2 -.->|read spend| DDB
+  RESP -.->|add spend| DDB
+  C3 -.->|ApplyGuardrail| GR
+  RESP -.->|metrics| CW
+  DENY["Denied: 403 or 503 error<br/>MODEL_NOT_ALLOWED, BUDGET_EXCEEDED, GUARDRAIL_BLOCKED, Request blocked by WAF"]:::err
+  req -.->|on denial| DENY
+  WAF -.->|blocked, 403| DENY
+  WAF -.->|logs, metrics| CW
+  SCP["Deferred: SCP to force traffic through the gateway<br/>needs AWS Organizations"]:::def
+  SCP -.-> BR
+  classDef svc fill:#dae8fc,stroke:#6c8ebf,color:#000
+  classDef sec fill:#e1d5e7,stroke:#9673a6,color:#000
+  classDef ok fill:#d5e8d4,stroke:#82b366,color:#000
+  classDef ext fill:#ffe6cc,stroke:#d79b00,color:#000
+  classDef err fill:#f8cecc,stroke:#b85450,color:#000
+  classDef def fill:#f5f5f5,stroke:#666666,stroke-dasharray:5 5,color:#000

@@ -1,0 +1,142 @@
+{
+ "anthropic.claude-fable-5": {
+  "cache_read": 0.001,
+  "cache_write_1h": 0.02,
+  "cache_write_5m": 0.0125,
+  "in": 0.01,
+  "out": 0.05
+ },
+ "anthropic.claude-haiku-4-5": {
+  "cache_read": 0.0001,
+  "cache_write_1h": 0.002,
+  "cache_write_5m": 0.00125,
+  "in": 0.001,
+  "out": 0.005
+ },
+ "anthropic.claude-haiku-4-5-20251001": {
+  "cache_read": 0.0001,
+  "cache_write_1h": 0.002,
+  "cache_write_5m": 0.00125,
+  "in": 0.001,
+  "out": 0.005
+ },
+ "anthropic.claude-haiku-4-5-20251001-v1:0": {
+  "cache_read": 0.0001,
+  "cache_write_1h": 0.002,
+  "cache_write_5m": 0.00125,
+  "in": 0.001,
+  "out": 0.005
+ },
+ "anthropic.claude-opus-4-7": {
+  "cache_read": 0.0005,
+  "cache_write_1h": 0.01,
+  "cache_write_5m": 0.00625,
+  "in": 0.005,
+  "out": 0.025
+ },
+ "anthropic.claude-opus-4-8": {
+  "cache_read": 0.0005,
+  "cache_write_1h": 0.01,
+  "cache_write_5m": 0.00625,
+  "in": 0.005,
+  "out": 0.025
+ },
+ "anthropic.claude-opus-5": {
+  "cache_read": 0.0005,
+  "cache_write_1h": 0.01,
+  "cache_write_5m": 0.00625,
+  "in": 0.005,
+  "out": 0.025
+ },
+ "anthropic.claude-opus-5-5": {
+  "cache_read": 0.0002,
+  "cache_write_1h": 0.008,
+  "cache_write_5m": 0.005,
+  "in": 0.004,
+  "out": 0.02
+ },
+ "anthropic.claude-sonnet-4-6": {
+  "cache_read": 0.0003,
+  "cache_write_1h": 0.006,
+  "cache_write_5m": 0.00375,
+  "in": 0.003,
+  "out": 0.015
+ },
+ "anthropic.claude-sonnet-5": {
+  "cache_read": 0.0002,
+  "cache_write_1h": 0.004,
+  "cache_write_5m": 0.0025,
+  "in": 0.002,
+  "out": 0.01
+ },
+ "openai.gpt-5.4": {
+  "cache_read": 0.00025,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.0025,
+  "out": 0.015
+ },
+ "openai.gpt-5.4-2026-03-05": {
+  "cache_read": 0.00025,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.0025,
+  "out": 0.015
+ },
+ "openai.gpt-5.5": {
+  "cache_read": 0.0005,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.005,
+  "out": 0.03
+ },
+ "openai.gpt-5.5-2026-04-23": {
+  "cache_read": 0.0005,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.005,
+  "out": 0.03
+ },
+ "openai.gpt-oss-120b": {
+  "cache_read": 0,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.00015,
+  "out": 0.0006
+ },
+ "openai.gpt-oss-20b": {
+  "cache_read": 0,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 7e-05,
+  "out": 0.0002
+ },
+ "openai.gpt-oss-safeguard-120b": {
+  "cache_read": 0,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 0.00015,
+  "out": 0.0006
+ },
+ "openai.gpt-oss-safeguard-20b": {
+  "cache_read": 0,
+  "cache_write_1h": 0,
+  "cache_write_5m": 0,
+  "in": 7e-05,
+  "out": 0.0002
+ },
+ "us.anthropic.claude-haiku-4-5-20251001-v1:0": {
+  "cache_read": 0.0001,
+  "cache_write_1h": 0.002,
+  "cache_write_5m": 0.00125,
+  "in": 0.001,
+  "out": 0.005
+ },
+ "us.anthropic.claude-sonnet-4-6": {
+  "cache_read": 0.0003,
+  "cache_write_1h": 0.006,
+  "cache_write_5m": 0.00375,
+  "in": 0.003,
+  "out": 0.015
+ }
+}

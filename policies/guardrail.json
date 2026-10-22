@@ -1,0 +1,19 @@
+{
+  "name": "claude-code-input-guardrail",
+  "description": "Block prompt injection and PII in prompts sent through AgentCore Gateway",
+  "blockedInputMessaging": "Request blocked by the organization's AI guardrail.",
+  "blockedOutputsMessaging": "Response blocked by the organization's AI guardrail.",
+  "contentPolicyConfig": {
+    "filtersConfig": [
+      { "type": "PROMPT_ATTACK", "inputStrength": "HIGH", "outputStrength": "NONE" }
+    ]
+  },
+  "sensitiveInformationPolicyConfig": {
+    "piiEntitiesConfig": [
+      { "type": "CREDIT_DEBIT_CARD_NUMBER", "action": "BLOCK" },
+      { "type": "AWS_ACCESS_KEY", "action": "BLOCK" },
+      { "type": "AWS_SECRET_KEY", "action": "BLOCK" },
+      { "type": "PASSWORD", "action": "BLOCK" }
+    ]
+  }
+}

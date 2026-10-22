@@ -1,0 +1,40 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: tests and static checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Python
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+
+      - name: Install
+        run: pip install -r requirements-dev.txt cfn-lint
+
+      - name: Fetch the pinned AWS sample
+        run: scripts/fetch-upstream.sh
+
+      - name: Unit and end-to-end handler tests
+        run: pytest -q interceptor/tests
+
+      - name: Build the patched interceptor package
+        run: python3 scripts/build_interceptor.py
+
+      - name: CloudFormation lint
+        run: cfn-lint infra/waf.yaml
+
+      - name: Shell syntax
+        run: for f in scripts/*.sh containers/entrypoint.sh; do bash -n "$f"; done

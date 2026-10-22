@@ -1,0 +1,8 @@
+.env.local
+upstream/
+build/
+__pycache__/
+.pytest_cache/
+*.pyc
+.claude/settings.local.json
+.venv/

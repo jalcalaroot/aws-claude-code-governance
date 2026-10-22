@@ -1,0 +1,8 @@
+# Install: pip install pre-commit && pre-commit install (once per clone).
+# Runs on every `git commit`, before the commit exists: a secret never leaves the machine,
+# unlike gitleaks in CI, which catches it only once it is already on GitHub.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks

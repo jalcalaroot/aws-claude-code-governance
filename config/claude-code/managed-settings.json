@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "defaultMode": "default",
+    "disableBypassPermissionsMode": "disable",
+    "disableAutoMode": "disable",
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./secrets/**)",
+      "Read(~/.aws/**)",
+      "Bash(aws *)",
+      "Bash(terraform destroy *)",
+      "Bash(terraform apply *)"
+    ],
+    "ask": [
+      "Bash(git push *)"
+    ]
+  },
+  "allowManagedPermissionRulesOnly": true
+}

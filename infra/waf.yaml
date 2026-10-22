@@ -1,0 +1,186 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: >
+  AWS WAF web ACL in front of the AgentCore Gateway (regional, same Region as the gateway):
+  AWS managed rule groups, an IP reputation list and a per-IP rate limit, with logging that
+  redacts credentials. New rules start in COUNT mode; see docs/phases.md (phase 7).
+
+Parameters:
+  GatewayId:
+    Type: String
+    Description: Gateway id (stack output GatewayId of the baseline stack).
+  EnforceOtherRules:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >
+      true = the known-bad-inputs group, the IP reputation list and the rate limit BLOCK;
+      false = they only COUNT (default, for observation).
+  EnforceCommonRules:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: >
+      true = the common rule set blocks (its SizeRestrictions_BODY rule stays in COUNT because
+      Claude Code bodies are large); false = COUNT. Enable only after reviewing the counted requests.
+  RateLimitPer5Min:
+    Type: Number
+    Default: 2000
+    MinValue: 10
+    Description: Requests allowed per source IP in a 5-minute window.
+  LogRetentionDays:
+    Type: Number
+    Default: 30
+
+Conditions:
+  EnforceOther: !Equals [!Ref EnforceOtherRules, "true"]
+  EnforceCommon: !Equals [!Ref EnforceCommonRules, "true"]
+
+Resources:
+  WafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      # WAF requires this prefix for CloudWatch Logs destinations
+      LogGroupName: !Sub "aws-waf-logs-${AWS::StackName}"
+      RetentionInDays: !Ref LogRetentionDays
+
+  WebAcl:
+    Type: AWS::WAFv2::WebACL
+    Properties:
+      Name: !Sub "${AWS::StackName}"
+      Description: Web ACL for the AgentCore Gateway
+      Scope: REGIONAL
+      DefaultAction:
+        Allow: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub "${AWS::StackName}"
+      Rules:
+        - Name: ip-rate-limit
+          Priority: 0
+          Action: !If [EnforceOther, {Block: {}}, {Count: {}}]
+          Statement:
+            RateBasedStatement:
+              Limit: !Ref RateLimitPer5Min
+              AggregateKeyType: IP
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: ip-rate-limit
+        - Name: aws-ip-reputation
+          Priority: 1
+          OverrideAction: !If [EnforceOther, {None: {}}, {Count: {}}]
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: aws-ip-reputation
+        - Name: aws-known-bad-inputs
+          Priority: 2
+          OverrideAction: !If [EnforceOther, {None: {}}, {Count: {}}]
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: aws-known-bad-inputs
+        - Name: aws-common-rules
+          Priority: 3
+          OverrideAction: !If [EnforceCommon, {None: {}}, {Count: {}}]
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              # Prompts and tool results are big (routinely over the 8 KB default body limit)
+              RuleActionOverrides:
+                - Name: SizeRestrictions_BODY
+                  ActionToUse:
+                    Count: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: aws-common-rules
+
+  WafLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Properties:
+      ResourceArn: !GetAtt WebAcl.Arn
+      LogDestinationConfigs:
+        - !GetAtt WafLogGroup.Arn
+      # the bearer token must never reach the logs
+      RedactedFields:
+        - SingleHeader:
+            Name: authorization
+        - SingleHeader:
+            Name: cookie
+        - SingleHeader:
+            Name: x-api-key
+
+  GatewayAssociation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Properties:
+      ResourceArn: !Sub "arn:${AWS::Partition}:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:gateway/${GatewayId}"
+      WebACLArn: !GetAtt WebAcl.Arn
+
+  # AgentCore publishes the WAF metrics with these dimensions (observed on WafBlocks)
+  WafFailClosesAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: AWS WAF was unreachable and the gateway rejected requests (FAIL_CLOSE).
+      Namespace: AWS/Bedrock-AgentCore
+      MetricName: WafFailCloses
+      Dimensions:
+        - {Name: Resource, Value: !Sub "arn:${AWS::Partition}:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:gateway/${GatewayId}"}
+        - {Name: Operation, Value: InvokeGateway}
+        - {Name: Protocol, Value: MCP}
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  WafFailOpensAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: AWS WAF was unreachable and requests were forwarded without inspection (FAIL_OPEN).
+      Namespace: AWS/Bedrock-AgentCore
+      MetricName: WafFailOpens
+      Dimensions:
+        - {Name: Resource, Value: !Sub "arn:${AWS::Partition}:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:gateway/${GatewayId}"}
+        - {Name: Operation, Value: InvokeGateway}
+        - {Name: Protocol, Value: MCP}
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 0
+      ComparisonOperator: GreaterThanThreshold
+      TreatMissingData: notBreaching
+
+  WafBlocksSpikeAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmDescription: Many requests blocked by AWS WAF in 5 minutes (attack, or a rule blocking legitimate traffic).
+      Namespace: AWS/Bedrock-AgentCore
+      MetricName: WafBlocks
+      Dimensions:
+        - {Name: Resource, Value: !Sub "arn:${AWS::Partition}:bedrock-agentcore:${AWS::Region}:${AWS::AccountId}:gateway/${GatewayId}"}
+        - {Name: Operation, Value: InvokeGateway}
+        - {Name: Protocol, Value: MCP}
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 20
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+
+Outputs:
+  WebAclArn:
+    Value: !GetAtt WebAcl.Arn
+  WafLogGroupName:
+    Value: !Ref WafLogGroup

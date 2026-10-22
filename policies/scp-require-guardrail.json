@@ -1,0 +1,25 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "DenyInvokeWithoutGuardrailExceptGateway",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "Null": {
+          "bedrock:GuardrailIdentifier": "true"
+        },
+        "ArnNotLike": {
+          "aws:PrincipalArn": [
+            "arn:aws:iam::*:role/<GATEWAY_ROLE_NAME>",
+            "arn:aws:iam::*:role/<BREAK_GLASS_ROLE_NAME>"
+          ]
+        }
+      }
+    }
+  ]
+}

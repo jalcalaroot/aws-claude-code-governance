@@ -1,0 +1,29 @@
+flowchart TB
+  subgraph A["1 · Clients and edge"]
+    direction LR
+    U1["finanzas seat<br/>Haiku 4.5<br/>1 USD per day"]:::svc
+    U2["platform seat<br/>Sonnet 4.6<br/>2 USD per day"]:::svc
+    WAF["AWS WAF<br/>rate limit, IP reputation,<br/>known bad inputs"]:::sec
+    AUTH["JWT authorizer<br/>Amazon Cognito"]:::sec
+    U1 --> WAF
+    U2 --> WAF
+    WAF --> AUTH
+  end
+  subgraph B["2 · AgentCore Gateway interceptor, on every request"]
+    direction LR
+    C1["Model allowed<br/>for this seat?"]:::sec
+    C2["Within the<br/>user budget?"]:::sec
+    C3["Bedrock Guardrails<br/>attacks, PII, keys"]:::sec
+    C1 --> C2 --> C3
+  end
+  subgraph C["3 · Models and spend"]
+    direction LR
+    BR["Amazon Bedrock<br/>Claude models"]:::ext
+    DDB[("DynamoDB<br/>spend per user")]:::ok
+    BR -.->|"cost per user"| DDB
+  end
+  A --> B --> C
+  classDef svc fill:#dae8fc,stroke:#6c8ebf,color:#000
+  classDef sec fill:#e1d5e7,stroke:#9673a6,color:#000
+  classDef ok fill:#d5e8d4,stroke:#82b366,color:#000
+  classDef ext fill:#ffe6cc,stroke:#d79b00,color:#000
