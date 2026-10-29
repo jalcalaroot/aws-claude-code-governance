@@ -1,6 +1,6 @@
 # End-user environment: a clean Linux box with Claude Code and no AWS credentials, only a gateway token.
 # Build context is the repository root (see scripts/run-user.sh).
-FROM public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:d9b4c61f49de68d41e43af1c0ef89c5600b0ad51da024406a15f5d014720c998
+FROM public.ecr.aws/amazonlinux/amazonlinux:2023@sha256:d9c9967b3d895c4c423f54b6562fbf5d18a5b68f5df54908c29e88cba4efcc04
 
 RUN dnf install -y -q python3-pip tar gzip findutils procps-ng shadow-utils && dnf clean all \
  && useradd -m enduser
